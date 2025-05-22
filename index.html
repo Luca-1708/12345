@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Katzen-Klicker Deluxe 2.0</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+      background-color: #fce4ec;
+      margin: 0;
+      padding: 0 20px;
+    }
+    h1 {
+      margin-top: 30px;
+    }
+    #cat {
+      width: 200px;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    #cat:active {
+      transform: scale(0.95);
+    }
+    #coins {
+      font-size: 24px;
+      margin: 15px;
+    }
+    button {
+      padding: 10px 15px;
+      font-size: 14px;
+      margin: 5px;
+      background-color: #ff4081;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #f50057;
+    }
+    #info, #shop {
+      margin-top: 20px;
+      font-size: 14px;
+    }
+    .shop-section {
+      margin: 15px 0;
+    }
+    .skin-option {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border: 2px solid transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    .skin-option:hover {
+      border-color: #ff4081;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🐱 Katzen-Klicker Deluxe 2.0</h1>
+  <img id="cat" src="https://placekitten.com/200/200" alt="Katze">
+  <div id="coins">Münzen: 0</div>
+
+  <button id="clickUpgrade">🔼 Klick-Upgrade (Kosten: 50)</button>
+  <button id="autoClicker">🤖 Auto-Klicker (Kosten: 200)</button>
+  <button id="superCat">✨ Super-Katze (Kosten: 500)</button>
+
+  <div id="info">
+    Münzen pro Klick: <span id="perClick">1</span><br>
+    Auto-Klicker: <span id="autoCount">0</span><br>
+    Super-Katze: <span id="superActive">Nein</span><br>
+    Multiplikator (Prestige): <span id="multiplier">x1</span>
+  </div>
+
+  <div id="shop">
+    <h2>🛍️ Shop</h2>
+
+    <div class="shop-section">
+      <h3>🎨 Skins (Kosten: 100)</h3>
+      <img class="skin-option" src="https://placekitten.com/201/200" data-skin="https://placekitten.com/201/200">
+      <img class="skin-option" src="https://placekitten.com/202/200" data-skin="https://placekitten.com/202/200">
+    </div>
+
+    <div class="shop-section">
+      <h3>⚡ Power-Ups</h3>
+      <button id="turboClick">⚡ Turbo-Klicks (300)</button>
+      <button id="megaClick">💥 Megaklick (1.000)</button>
+      <button id="multiClick">🔁 Multiklick (5.000)</button>
+      <div><small>Effekte: +10 Klicks, Sofortbonus, Klick verdreifacht</small></div>
+    </div>
+
+    <div class="shop-section">
+      <h3>♻️ Prestige</h3>
+      <button id="prestige">🌟 Prestige (Reset & Multiplikator +1)</button>
+    </div>
+  </div>
+
+  <audio id="clickSound" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio>
+  <audio id="buySound" src="https://www.soundjay.com/button/button-29.wav" preload="auto"></audio>
+
+  <script>
+    let coins = 0;
+    let baseClick = 1;
+    let perClick = 1;
+    let clickUpgradeCost = 50;
+    let autoClickerCost = 200;
+    let superCatCost = 500;
+    let autoClickers = 0;
+    let superCat = false;
+    let turboActive = false;
+    let multiplier = 1;
+
+    const clickSound = document.getElementById("clickSound");
+    const buySound = document.getElementById("buySound");
+
+    const cat = document.getElementById("cat");
+    const coinsDisplay = document.getElementById("coins");
+    const clickUpgradeBtn = document.getElementById("clickUpgrade");
+    const autoClickerBtn = document.getElementById("autoClicker");
+    const superCatBtn = document.getElementById("superCat");
+    const turboClickBtn = document.getElementById("turboClick");
+    const megaClickBtn = document.getElementById("megaClick");
+    const multiClickBtn = document.getElementById("multiClick");
+    const prestigeBtn = document.getElementById("prestige");
+
+    const perClickDisplay = document.getElementById("perClick");
+    const autoCountDisplay = document.getElementById("autoCount");
+    const superActiveDisplay = document.getElementById("superActive");
+    const multiplierDisplay = document.getElementById("multiplier");
+
+    function updateClickPower() {
+      perClick = baseClick * multiplier;
+      if (superCat) perClick *= 2;
+      if (turboActive) perClick += 10;
+    }
+
+    function updateDisplay() {
+      coinsDisplay.textContent = `Münzen: ${Math.floor(coins)}`;
+      perClickDisplay.textContent = perClick;
+      autoCountDisplay.textContent = autoClickers;
+      superActiveDisplay.textContent = superCat ? "Ja" : "Nein";
+      multiplierDisplay.textContent = `x${multiplier}`;
+    }
+
+    function playClick() {
+      clickSound.currentTime = 0;
+      clickSound.play();
+    }
+
+    function playBuy() {
+      buySound.currentTime = 0;
+      buySound.play();
+    }
+
+    cat.addEventListener("click", () => {
+      coins += perClick;
+      updateDisplay();
+      playClick();
+      saveGame();
+    });
+
+    clickUpgradeBtn.addEventListener("click", () => {
+      if (coins >= clickUpgradeCost) {
+        coins -= clickUpgradeCost;
+        baseClick += 1;
+        clickUpgradeCost = Math.floor(clickUpgradeCost * 1.5);
+        clickUpgradeBtn.textContent = `🔼 Klick-Upgrade (Kosten: ${clickUpgradeCost})`;
+        playBuy();
+        updateClickPower();
+        updateDisplay();
+        saveGame();
+      }
+    });
+
+    autoClickerBtn.addEventListener("click", () => {
+      if (coins >= autoClickerCost) {
+        coins -= autoClickerCost;
+        autoClickers += 1;
+        autoClickerCost = Math.floor(autoClickerCost * 1.6);
+        autoClickerBtn.textContent = `🤖 Auto-Klicker (Kosten: ${autoClickerCost})`;
+        playBuy();
+        updateDisplay();
+        saveGame();
+      }
+    });
+
+    superCatBtn.addEventListener("click", () => {
+      if (!superCat && coins >= superCatCost) {
+        coins -= superCatCost;
+        superCat = true;
+        superCatBtn.disabled = true;
+        playBuy();
+        updateClickPower();
+        updateDisplay();
+        saveGame();
+      }
+    });
+
+    turboClickBtn.addEventListener("click", () => {
+      if (!turboActive && coins >= 300) {
+        coins -= 300;
+        turboActive = true;
+        turboClickBtn.disabled = true;
+        playBuy();
+        updateClickPower();
+        updateDisplay();
+        saveGame();
+        setTimeout(() => {
+          turboActive = false;
+          turboClickBtn.disabled = false;
+          updateClickPower();
+          updateDisplay();
+        }, 30000);
+      }
+    });
+
+    megaClickBtn.addEventListener("click", () => {
+      if (coins >= 1000) {
+        coins -= 1000;
+        coins += 10000;
+        playBuy();
+        updateDisplay();
+        saveGame();
+      }
+    });
+
+    multiClickBtn.addEventListener("click", () => {
+      if (coins >= 5000) {
+        coins -= 5000;
+        baseClick *= 3;
+        updateClickPower();
+        playBuy();
+        updateDisplay();
+        saveGame();
+      }
+    });
+
+    prestigeBtn.addEventListener("click", () => {
+      if (confirm("Willst du wirklich alles zurücksetzen? Du bekommst einen Multiplikator +1.")) {
+        multiplier++;
+        coins = 0;
+        baseClick = 1;
+        perClick = 1;
+        clickUpgradeCost = 50;
+        autoClickerCost = 200;
+        superCatCost = 500;
+        autoClickers = 0;
+        superCat = false;
+        turboActive = false;
+        superCatBtn.disabled = false;
+        updateClickPower();
+        updateDisplay();
+        saveGame();
+      }
+    });
+
+    document.querySelectorAll(".skin-option").forEach(img => {
+      img.addEventListener("click", () => {
+        if (coins >= 100) {
+          coins -= 100;
+          cat.src = img.dataset.skin;
+          playBuy();
+          updateDisplay();
+          saveGame();
+        }
+      });
+    });
+
+    setInterval(() => {
+      coins += autoClickers * multiplier;
+      updateDisplay();
+      saveGame();
+    }, 1000);
+
+    function saveGame() {
+      const data = {
+        coins, baseClick, clickUpgradeCost, autoClickerCost, superCatCost,
+        autoClickers, superCat, multiplier
+      };
+      localStorage.setItem("katzenClickerSave", JSON.stringify(data));
+    }
+
+    function loadGame() {
+      const data = JSON.parse(localStorage.getItem("katzenClickerSave"));
+      if (data) {
+        coins = data.coins || 0;
+        baseClick = data.baseClick || 1;
+        clickUpgradeCost = data.clickUpgradeCost || 50;
+        autoClickerCost = data.autoClickerCost || 200;
+        superCatCost = data.superCatCost || 500;
+        autoClickers = data.autoClickers || 0;
+        superCat = data.superCat || false;
+        multiplier = data.multiplier || 1;
+        if (superCat) superCatBtn.disabled = true;
+        clickUpgradeBtn.textContent = `🔼 Klick-Upgrade (Kosten: ${clickUpgradeCost})`;
+        autoClickerBtn.textContent = `🤖 Auto-Klicker (Kosten: ${autoClickerCost})`;
+        updateClickPower();
+        updateDisplay();
+      }
+    }
+
+    loadGame();
+	<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+<script>
+  // 🔧 Deine Firebase-Daten einfügen:
+  const firebaseConfig = {
+    apiKey: "DEIN_API_KEY",
+    authDomain: "deinprojekt.firebaseapp.com",
+    databaseURL: "https://deinprojekt-default-rtdb.firebaseio.com",
+    projectId: "deinprojekt",
+    storageBucket: "deinprojekt.appspot.com",
+    messagingSenderId: "1234567890",
+    appId: "1:1234567890:web:abc123xyz456"
+  };
+
+  // 🔌 Initialisieren
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // 🏆 Score speichern
+  function saveHighscore(name, score) {
+    const ref = db.ref("highscores");
+    const newEntry = ref.push();
+    newEntry.set({ name: name, score: score });
+  }
+
+  // 🥇 Highscores anzeigen
+  function loadHighscores() {
+    const ref = db.ref("highscores").orderByChild("score").limitToLast(10);
+    ref.once("value", (snapshot) => {
+      const data = snapshot.val();
+      const list = document.getElementById("rankingList");
+      list.innerHTML = "";
+      const entries = Object.values(data).sort((a, b) => b.score - a.score);
+      entries.forEach(entry => {
+        const li = document.createElement("li");
+        li.textContent = `${entry.name} – ${entry.score} Münzen`;
+        list.appendChild(li);
+      });
+    });
+  }<ul id="rankingList"></ul>
+<button onclick="loadHighscores()">Leaderboard anzeigen</button>
+// Beim Spielende oder neuen Rekord:
+saveHighscore("KatzenFan99", 1240);
+".read": true,
+".write": true
+"highscores": {
+  ".read": true,
+  ".write": "data.child('score').val() <= 1000000"
+}
+  </script>
+
+</body>
+</html>
